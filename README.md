@@ -1,276 +1,642 @@
-# LedgerX — Personal Finance Ledger
+# LedgerX
 
-A full-stack personal finance management app with Redis backend, React frontend, and one-click Vercel deployment.
+**A simple, full-stack personal finance ledger for tracking everyday spending, savings, and money you lend or borrow.**
+
+LedgerX is a personal finance management application built with React, Node.js, and Upstash Redis. It brings everyday financial tracking into one place without trying to turn a simple ledger into an overly complicated financial platform.
+
+You can record expenses, create savings goals, keep track of money lent or borrowed, manage people connected to your transactions, and view reports that help you understand where your money is going.
+
+The application is designed to run locally during development and can be deployed to Vercel with Upstash Redis as the backend datastore.
 
 ---
 
-## 🚀 Quick Start (Local Development)
+## Features
 
-### Prerequisites
-- Node.js 18+
-- An [Upstash](https://upstash.com) account (free tier is enough)
+### Dashboard
 
-### Step 1 — Clone & Install
+A quick overview of your financial activity, including:
+
+* Current net position
+* Total income and expenses tracked by the application
+* Savings progress
+* Lending and borrowing balances
+* Spending trends
+* Category-wise spending breakdown
+* Quick actions for common tasks
+
+### Expense Tracking
+
+Keep a record of everyday expenses with:
+
+* Amount
+* Category
+* Description
+* Date
+* Recurring expense status
+* Monthly filtering
+* Category filtering
+
+Expenses are organized by month to keep queries and reporting straightforward.
+
+### Savings Goals
+
+Create and track savings goals with:
+
+* Target amount
+* Current saved amount
+* Target date
+* Goal category/icon
+* Visual progress tracking
+
+Savings goals can be updated as you make progress towards them.
+
+### Lending & Borrowing Ledger
+
+Keep track of money you have lent to or borrowed from other people.
+
+Each record can include:
+
+* Person
+* Amount
+* Description
+* Date
+* Due date
+* Status
+
+Entries can be marked as settled once the transaction is completed, while overdue entries are highlighted for easier follow-up.
+
+### People
+
+Maintain a simple list of people associated with your financial records and view their overall balance.
+
+### Reports
+
+Understand your spending through visual reports including:
+
+* Spending trends
+* Category breakdowns
+* Cumulative spending
+* Category-wise totals
+
+### Authentication
+
+LedgerX uses JWT-based authentication with password hashing through `bcryptjs`.
+
+Each user's financial data is isolated using user-specific Redis keys.
+
+### Multi-Currency Support
+
+The application currently supports:
+
+* INR
+* USD
+* EUR
+* GBP
+* AED
+
+### Responsive Interface
+
+The frontend is designed to work across desktop and mobile screen sizes, with a collapsible navigation sidebar for smaller screens.
+
+---
+
+## Tech Stack
+
+LedgerX keeps the stack relatively small and uses technologies that work well together.
+
+| Area           | Technology                                                  |
+| -------------- | ----------------------------------------------------------- |
+| Frontend       | React 18                                                    |
+| Routing        | React Router 6                                              |
+| Charts         | Recharts                                                    |
+| Icons          | Lucide React                                                |
+| Styling        | CSS / CSS Variables                                         |
+| Backend        | Node.js                                                     |
+| API            | Express locally / Vercel Serverless Functions in production |
+| Database       | Upstash Redis                                               |
+| Authentication | JWT + bcryptjs                                              |
+| Build Tool     | Vite 5                                                      |
+| Deployment     | Vercel                                                      |
+
+---
+
+## Architecture
+
+At a high level, LedgerX follows a simple frontend → API → database architecture.
+
+```text
+┌──────────────────────┐
+│      React App       │
+│   Vite + React 18    │
+└──────────┬───────────┘
+           │
+           │ HTTP / JSON
+           ▼
+┌──────────────────────┐
+│      API Layer       │
+│ Node.js / Serverless │
+│ Functions on Vercel  │
+└──────────┬───────────┘
+           │
+           │ REST
+           ▼
+┌──────────────────────┐
+│     Upstash Redis    │
+│  User-scoped data    │
+└──────────────────────┘
+```
+
+Authentication is handled at the API layer. Protected requests include a JWT in the `Authorization` header, and the API uses the authenticated user's ID when accessing financial data.
+
+This keeps users isolated from one another while allowing the application to remain lightweight.
+
+---
+
+## Project Structure
+
+```text
+ledgerx/
+│
+├── api/
+│   ├── _auth.js
+│   ├── _redis.js
+│   │
+│   ├── auth/
+│   │   ├── login.js
+│   │   ├── me.js
+│   │   └── register.js
+│   │
+│   ├── expenses/
+│   │   └── index.js
+│   │
+│   ├── savings/
+│   │   └── index.js
+│   │
+│   ├── ledger/
+│   │   └── index.js
+│   │
+│   ├── people/
+│   │   └── index.js
+│   │
+│   └── reports/
+│       └── summary.js
+│
+├── src/
+│   ├── components/
+│   │   ├── layout/
+│   │   └── ui/
+│   │
+│   ├── context/
+│   │   └── AuthContext.jsx
+│   │
+│   ├── lib/
+│   │   └── api.js
+│   │
+│   ├── pages/
+│   │   ├── LoginPage.jsx
+│   │   ├── RegisterPage.jsx
+│   │   ├── Dashboard.jsx
+│   │   ├── ExpensesPage.jsx
+│   │   ├── SavingsPage.jsx
+│   │   ├── LedgerPage.jsx
+│   │   ├── PeoplePage.jsx
+│   │   └── ReportsPage.jsx
+│   │
+│   ├── App.jsx
+│   ├── main.jsx
+│   └── index.css
+│
+├── public/
+├── dev-server.js
+├── vite.config.js
+├── vercel.json
+├── package.json
+├── .env.example
+└── README.md
+```
+
+### A quick guide to the important directories
+
+**`src/pages/`**
+Contains the main application screens.
+
+**`src/components/`**
+Reusable UI and layout components.
+
+**`src/context/`**
+Global React state such as authentication.
+
+**`src/lib/`**
+Shared application utilities, including the API client.
+
+**`api/`**
+Backend API endpoints. These become serverless functions when deployed through Vercel.
+
+**`dev-server.js`**
+Provides the local API server used during development.
+
+---
+
+# Getting Started
+
+## Prerequisites
+
+Before running LedgerX locally, make sure you have:
+
+* Node.js 18 or later
+* npm
+* An Upstash Redis database
+
+You do **not** need to install Redis locally. LedgerX communicates with Upstash Redis through its REST API.
+
+---
+
+## 1. Clone the repository
 
 ```bash
+git clone https://github.com/<your-username>/ledgerx.git
 cd ledgerx
+```
+
+Install dependencies:
+
+```bash
 npm install
 ```
 
-### Step 2 — Set up Upstash Redis (replaces local Redis)
+---
 
-> **You do NOT need to install Redis locally.** This app uses Upstash — a serverless Redis service that works over HTTP. It has a generous free tier.
+## 2. Create an Upstash Redis database
 
-1. Go to [https://upstash.com](https://upstash.com) and create a free account
-2. Click **Create Database**
-3. Choose a name (e.g. `ledgerx`), select a region close to you, click Create
-4. In the database dashboard, copy:
-   - **REST URL** (looks like `https://xxxxx.upstash.io`)
-   - **REST Token** (a long string starting with `AX...`)
+Create a Redis database through Upstash and obtain its REST credentials.
 
-### Step 3 — Configure Environment
+You will need:
 
-Edit the `.env.local` file in the project root:
-
-```env
-UPSTASH_REDIS_REST_URL=https://your-url.upstash.io
-UPSTASH_REDIS_REST_TOKEN=your-token-here
-JWT_SECRET=any-long-random-string-you-make-up
+```text
+UPSTASH_REDIS_REST_URL
+UPSTASH_REDIS_REST_TOKEN
 ```
 
-> For `JWT_SECRET`, just type any long random string like `myapp_super_secret_key_2024_random_xyz`
+Keep the token private. It should never be committed to the repository.
 
-### Step 4 — Run the App
+---
 
-You need **two terminals**:
+## 3. Configure environment variables
 
-**Terminal 1 — API server:**
+Create a `.env.local` file in the project root.
+
+```env
+UPSTASH_REDIS_REST_URL=https://your-database.upstash.io
+UPSTASH_REDIS_REST_TOKEN=your-upstash-token
+JWT_SECRET=your-long-random-secret
+```
+
+You can use `.env.example` as the starting point for your local configuration.
+
+### Environment variables
+
+| Variable                   | Purpose                                   |
+| -------------------------- | ----------------------------------------- |
+| `UPSTASH_REDIS_REST_URL`   | Upstash Redis REST endpoint               |
+| `UPSTASH_REDIS_REST_TOKEN` | Authentication token for Redis            |
+| `JWT_SECRET`               | Secret used to sign authentication tokens |
+
+Never commit `.env.local` or any file containing real credentials.
+
+---
+
+## 4. Start the development servers
+
+LedgerX currently uses separate processes for the frontend and local API.
+
+### Terminal 1 — API
+
 ```bash
 npm run dev:api
 ```
-This starts the backend at `http://localhost:3001`
 
-**Terminal 2 — Frontend:**
+The local API will run on:
+
+```text
+http://localhost:3001
+```
+
+### Terminal 2 — Frontend
+
 ```bash
 npm run dev
 ```
-This starts the frontend at `http://localhost:5173`
 
-Open `http://localhost:5173` in your browser. Register an account and start using the app!
+The Vite development server will run on:
+
+```text
+http://localhost:5173
+```
+
+Open the frontend in your browser:
+
+```text
+http://localhost:5173
+```
+
+You can now create an account and start using LedgerX.
 
 ---
 
-## ☁️ Deploy to Vercel (Production)
+# Production Deployment
 
-### Step 1 — Push to GitHub
+LedgerX is designed to deploy to Vercel with Upstash Redis.
+
+## 1. Push the project to GitHub
+
 ```bash
 git init
 git add .
-git commit -m "Initial LedgerX"
-git remote add origin https://github.com/YOUR_USER/ledgerx.git
+git commit -m "Initial LedgerX setup"
+git branch -M main
+git remote add origin https://github.com/<your-username>/ledgerx.git
 git push -u origin main
 ```
 
-### Step 2 — Import to Vercel
-1. Go to [vercel.com](https://vercel.com) → New Project
-2. Import your GitHub repository
-3. Vercel auto-detects it as a Vite project — no config needed
+## 2. Import the repository into Vercel
 
-### Step 3 — Add Upstash Integration
-1. In Vercel dashboard → your project → **Integrations**
-2. Search for **Upstash** and click Connect
-3. Select your Upstash database
-4. Vercel automatically injects `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN`
+Create a new project in Vercel and import the GitHub repository.
 
-### Step 4 — Add JWT Secret
-In Vercel → Settings → Environment Variables, add:
+Vercel should detect the Vite-based project automatically.
+
+## 3. Configure Upstash
+
+Connect your Upstash database through the project's environment/integration configuration.
+
+The application requires:
+
+```text
+UPSTASH_REDIS_REST_URL
+UPSTASH_REDIS_REST_TOKEN
 ```
-JWT_SECRET = your_long_random_secret_string
+
+## 4. Add the JWT secret
+
+Add the following environment variable in Vercel:
+
+```text
+JWT_SECRET
 ```
 
-### Step 5 — Deploy
-Click **Deploy** — your app will be live at `https://your-project.vercel.app`
+Use a strong, randomly generated secret in production.
+
+## 5. Deploy
+
+Once the environment variables are configured, deploy the project.
+
+Vercel will build the frontend and expose the API routes as serverless functions.
 
 ---
 
-## 📁 Project Structure
+# Data Model
 
-```
-ledgerx/
-├── api/                          # Vercel Serverless Functions (Node.js)
-│   ├── _redis.js                 # Upstash Redis client singleton
-│   ├── _auth.js                  # JWT verification helper
-│   ├── auth/
-│   │   ├── register.js           # POST /api/auth/register
-│   │   ├── login.js              # POST /api/auth/login
-│   │   └── me.js                 # GET /api/auth/me
-│   ├── expenses/
-│   │   └── index.js              # GET/POST/DELETE /api/expenses
-│   ├── savings/
-│   │   └── index.js              # GET/POST/PUT/DELETE /api/savings
-│   ├── ledger/
-│   │   └── index.js              # GET/POST/PUT/DELETE /api/ledger
-│   ├── people/
-│   │   └── index.js              # GET/POST/DELETE /api/people
-│   └── reports/
-│       └── summary.js            # GET /api/reports/summary
-│
-├── src/                          # React Frontend
-│   ├── main.jsx                  # Entry point
-│   ├── App.jsx                   # Router + Auth guards
-│   ├── index.css                 # Global design system
-│   ├── context/
-│   │   └── AuthContext.jsx       # Global auth state
-│   ├── lib/
-│   │   └── api.js                # API client (all fetch calls)
-│   ├── components/
-│   │   ├── layout/
-│   │   │   ├── Layout.jsx        # App shell (sidebar + navbar)
-│   │   │   └── Layout.css
-│   │   └── ui/
-│   │       ├── UI.jsx            # Reusable components (Button, Modal, Card...)
-│   │       └── UI.css
-│   └── pages/
-│       ├── LoginPage.jsx
-│       ├── RegisterPage.jsx
-│       ├── AuthPage.css
-│       ├── Dashboard.jsx         # Overview + charts
-│       ├── Dashboard.css
-│       ├── ExpensesPage.jsx      # Expense tracking
-│       ├── SavingsPage.jsx       # Savings goals
-│       ├── LedgerPage.jsx        # Lend/borrow tracking
-│       ├── PeoplePage.jsx        # Contact management
-│       ├── ReportsPage.jsx       # Analytics & charts
-│       ├── Reports.css
-│       └── ListPage.css          # Shared page styles
-│
-├── public/
-│   └── favicon.svg
-├── dev-server.js                 # Local Express server (mirrors Vercel)
-├── vite.config.js                # Vite + API proxy
-├── vercel.json                   # Vercel routing config
-├── .env.local                    # Local environment variables (DO NOT COMMIT)
-├── .env.example                  # Template for environment variables
-└── package.json
+LedgerX stores data in Redis using user-scoped keys.
+
+The general structure is:
+
+```text
+user:{id}
+user:email:{email}
+
+user:{id}:expenses:{YYYY-MM}
+user:{id}:savings
+user:{id}:ledger
+user:{id}:people
 ```
 
----
+This structure keeps each user's records separated and also allows expenses to be queried by month.
 
-## 🗄️ Redis Data Schema
+For example:
 
-All data is stored per-user using prefixed keys:
+```text
+user:123:expenses:2026-09
+```
 
-| Key Pattern | Type | Contents |
-|---|---|---|
-| `user:{id}` | String (JSON) | User profile (name, email, hashed password, currency) |
-| `user:email:{email}` | String | Maps email → user ID for login lookup |
-| `user:{id}:expenses:{YYYY-MM}` | String (JSON Array) | Monthly expense entries |
-| `user:{id}:savings` | String (JSON Array) | All savings goals |
-| `user:{id}:ledger` | String (JSON Array) | All lend/borrow records |
-| `user:{id}:people` | String (JSON Array) | Contact list |
+contains the expenses recorded by user `123` during September 2026.
 
-### Example: Expense Entry
+### Expense
+
 ```json
 {
-  "id": "uuid-v4",
-  "amount": 450.00,
+  "id": "uuid",
+  "amount": 450,
   "category": "Food & Dining",
-  "description": "Dinner at Barbeque Nation",
-  "date": "2024-12-15",
+  "description": "Dinner",
+  "date": "2026-09-15",
   "isRecurring": false,
-  "createdAt": "2024-12-15T18:30:00.000Z"
+  "createdAt": "2026-09-15T18:30:00.000Z"
 }
 ```
 
-### Example: Ledger Entry
+### Ledger Entry
+
 ```json
 {
-  "id": "uuid-v4",
+  "id": "uuid",
   "type": "lent",
   "personName": "Ravi Kumar",
   "amount": 5000,
-  "description": "Helped with rent",
-  "date": "2024-12-01",
-  "dueDate": "2024-12-31",
+  "description": "Rent",
+  "date": "2026-09-01",
+  "dueDate": "2026-09-30",
   "status": "pending",
-  "createdAt": "2024-12-01T10:00:00.000Z"
+  "createdAt": "2026-09-01T10:00:00.000Z"
 }
 ```
 
 ---
 
-## 🔌 API Reference
+# API Overview
 
-All protected routes require `Authorization: Bearer <token>` header.
+The frontend communicates with the backend through REST endpoints.
 
-### Auth
-| Method | Endpoint | Description |
-|---|---|---|
-| POST | `/api/auth/register` | Register new user |
-| POST | `/api/auth/login` | Login, returns JWT token |
-| GET | `/api/auth/me` | Get current user profile |
+Protected endpoints require:
 
-### Expenses
-| Method | Endpoint | Description |
-|---|---|---|
-| GET | `/api/expenses?month=YYYY-MM` | List expenses for a month |
-| GET | `/api/expenses` | List all expenses |
-| POST | `/api/expenses` | Create expense |
-| DELETE | `/api/expenses?id=X&month=YYYY-MM` | Delete expense |
+```http
+Authorization: Bearer <token>
+```
 
-### Savings
-| Method | Endpoint | Description |
-|---|---|---|
-| GET | `/api/savings` | List all goals |
-| POST | `/api/savings` | Create goal |
-| PUT | `/api/savings` | Update goal amount |
-| DELETE | `/api/savings?id=X` | Delete goal |
+| Resource       | Endpoint               | Operations                    |
+| -------------- | ---------------------- | ----------------------------- |
+| Authentication | `/api/auth/*`          | Register, login, current user |
+| Expenses       | `/api/expenses`        | List, create, delete          |
+| Savings        | `/api/savings`         | List, create, update, delete  |
+| Ledger         | `/api/ledger`          | List, create, update, delete  |
+| People         | `/api/people`          | List, create, delete          |
+| Reports        | `/api/reports/summary` | Financial summary             |
 
-### Ledger
-| Method | Endpoint | Description |
-|---|---|---|
-| GET | `/api/ledger` | List all entries |
-| POST | `/api/ledger` | Create entry |
-| PUT | `/api/ledger` | Settle entry (update status) |
-| DELETE | `/api/ledger?id=X` | Delete entry |
-
-### People
-| Method | Endpoint | Description |
-|---|---|---|
-| GET | `/api/people` | List contacts |
-| POST | `/api/people` | Add contact |
-| DELETE | `/api/people?id=X` | Remove contact |
-
-### Reports
-| Method | Endpoint | Description |
-|---|---|---|
-| GET | `/api/reports/summary` | Dashboard summary with charts data |
+For implementation details, request validation, and response formats, refer to the corresponding files under `api/`.
 
 ---
 
-## ✨ Features
+# Development Notes
 
-- **Dashboard** — Net position banner, stat cards, spending trends, category pie chart, quick actions
-- **Expenses** — Add/delete expenses by category, filter by month and category, category breakdown sidebar
-- **Savings Goals** — Create goals with icons and target dates, track progress with visual bars
-- **Ledger** — Track lends and borrows, mark overdue entries, settle with one click
-- **People** — Contact book with balance summary per person
-- **Reports** — Bar chart, pie chart, cumulative area chart, full category table
-- **Authentication** — JWT-based, 7-day sessions
-- **Multi-currency** — INR, USD, EUR, GBP, AED
-- **Responsive** — Works on mobile (collapsible sidebar)
+### Frontend
+
+Most application UI lives under:
+
+```text
+src/
+```
+
+Pages should generally handle page-level composition, while reusable UI should live under:
+
+```text
+src/components/
+```
+
+API calls are centralized through:
+
+```text
+src/lib/api.js
+```
+
+This keeps request handling out of individual components where possible.
+
+### Backend
+
+Backend endpoints are organized by resource:
+
+```text
+api/
+├── auth/
+├── expenses/
+├── savings/
+├── ledger/
+├── people/
+└── reports/
+```
+
+Shared Redis and authentication functionality lives in:
+
+```text
+api/_redis.js
+api/_auth.js
+```
 
 ---
 
-## 🛠️ Tech Stack
+# Security
 
-| Layer | Technology |
-|---|---|
-| Frontend | React 18, React Router 6, Recharts, Lucide Icons |
-| Styling | Pure CSS with CSS variables (no Tailwind) |
-| Backend | Node.js Serverless Functions (Vercel) |
-| Database | Upstash Redis (HTTP-based, serverless-compatible) |
-| Auth | JWT (jsonwebtoken) + bcryptjs |
-| Build | Vite 5 |
-| Deployment | Vercel |
+LedgerX handles personal financial information, so environment configuration and authentication secrets should be treated carefully.
 
+A few important rules:
+
+* Never commit `.env.local`.
+* Never expose `UPSTASH_REDIS_REST_TOKEN` to the frontend.
+* Use a strong `JWT_SECRET` in production.
+* Do not hard-code credentials in source files.
+* Keep authentication checks on the server.
+* Validate and authorize API requests before accessing user data.
+
+LedgerX is a personal finance tracking application and is **not intended to provide financial, investment, tax, or legal advice**.
+
+---
+
+# Contributing
+
+Contributions are welcome.
+
+If you want to work on LedgerX:
+
+1. Fork the repository.
+2. Create a branch for your change.
+
+```bash
+git checkout -b feature/your-feature
+```
+
+3. Make your changes.
+4. Test the application locally.
+5. Commit your changes with a clear message.
+
+```bash
+git commit -m "Add expense category filtering"
+```
+
+6. Push the branch.
+
+```bash
+git push origin feature/your-feature
+```
+
+7. Open a pull request with a short explanation of what changed and why.
+
+For larger changes, it is useful to open an issue first so the approach can be discussed before implementation.
+
+---
+
+# Common Issues
+
+### The frontend loads but API requests fail
+
+Make sure the API server is running:
+
+```bash
+npm run dev:api
+```
+
+Also check that your `.env.local` contains valid Upstash credentials.
+
+### Redis requests are failing
+
+Verify:
+
+```text
+UPSTASH_REDIS_REST_URL
+UPSTASH_REDIS_REST_TOKEN
+```
+
+and make sure the Upstash database is active.
+
+### Authentication is not working
+
+Check that `JWT_SECRET` is present in the environment used by the API.
+
+If you change the secret while testing locally, existing JWTs will no longer be valid and you may need to log in again.
+
+---
+
+# Scripts
+
+The main development commands are:
+
+```bash
+npm install
+npm run dev
+npm run dev:api
+```
+
+Check `package.json` for the complete list of available scripts.
+
+---
+
+# Roadmap
+
+Some areas that can be explored as LedgerX evolves:
+
+* Recurring expense automation
+* Better transaction search and filtering
+* Import/export of financial data
+* More detailed financial reports
+* Budget planning
+* Improved mobile experience
+* Notifications and reminders
+* Additional currency support
+* Automated testing
+* More granular API validation and error handling
+
+The roadmap is intentionally flexible and may change as the application develops.
+
+---
+
+## Built With
+
+LedgerX was built as a practical full-stack project to explore modern React development, REST APIs, serverless deployment, authentication, and Redis-based data storage.
+
+**React · Vite · Node.js · Upstash Redis · Vercel**
